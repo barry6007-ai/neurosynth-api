@@ -103,15 +103,22 @@ def create_app():
 
     # -------------------------------------------------------------
     # 4. 基礎查詢: GET /terms/<term>/studies
+    # 資料庫中詞彙格式為 "terms_abstract_tfidf__<term>"
+    # 支援兩種查詢：直接輸入 "fear" 或 "terms_abstract_tfidf__fear" 皆可
     # -------------------------------------------------------------
     @app.get("/terms/<path:term>/studies", endpoint="terms_studies")
     def get_studies_by_term(term):
         term_clean = term.strip().lower()
+        # 若使用者輸入不含前綴，自動補上
+        if not term_clean.startswith("terms_"):
+            term_full = f"terms_abstract_tfidf__{term_clean}"
+        else:
+            term_full = term_clean
         eng = get_engine()
         with eng.begin() as conn:
             rows = conn.execute(
                 text("SELECT DISTINCT study_id FROM ns.annotations_terms WHERE LOWER(term) = :t"),
-                {"t": term_clean}
+                {"t": term_full}
             ).fetchall()
             studies = [str(r[0]) for r in rows]
 
@@ -156,6 +163,11 @@ def create_app():
     def dissociate_terms(term_a, term_b):
         ta = term_a.strip().lower()
         tb = term_b.strip().lower()
+        # 自動補上資料庫前綴
+        if not ta.startswith("terms_"):
+            ta = f"terms_abstract_tfidf__{ta}"
+        if not tb.startswith("terms_"):
+            tb = f"terms_abstract_tfidf__{tb}"
 
         eng = get_engine()
         sql = """
