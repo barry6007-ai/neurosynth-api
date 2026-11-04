@@ -1,0 +1,7 @@
+*.parquet
+__pycache__/
+.DS_Store
+0_HTML_CSS/
+1_JS_Basic/
+*.html
+
